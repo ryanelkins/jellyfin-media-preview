@@ -10,8 +10,14 @@ import type { AspectRatio, TrailerCandidate, TrailerInfo, TrailerPreview } from 
 
 const SUPPORTED_VIDEO_CONTAINERS = new Set(['mp4', 'm4v', 'webm', 'ogg', 'ogv', 'mov']);
 const UNAVAILABLE_TRAILER_CACHE_WAIT_MS = 1500;
-const unavailableYouTubeVideoIds = new Set<string>();
+const UNAVAILABLE_TRAILER_CACHE_REFRESH_MS = 5 * 60 * 1000;
+const UNAVAILABLE_TRAILER_CACHE_RETRY_MS = 30 * 1000;
+const serverUnavailableYouTubeVideoIds = new Set<string>();
+const locallyUnavailableYouTubeVideoIds = new Map<string, number>();
 let unavailableYouTubeVideoIdsRequest: Promise<void> | null = null;
+let unavailableYouTubeVideoIdsLastAttemptAt = 0;
+let unavailableYouTubeVideoIdsLastLoadedAt = 0;
+let unavailableYouTubeVideoIdsGeneration = 0;
 
 interface UnavailableTrailerListResponse {
   videoIds?: unknown;
@@ -20,38 +26,91 @@ interface UnavailableTrailerListResponse {
 
 function loadUnavailableYouTubeVideoIds(): Promise<void> {
   if (!config.unavailableTrailerCacheEnabled) {
+    serverUnavailableYouTubeVideoIds.clear();
     return Promise.resolve();
   }
 
   if (unavailableYouTubeVideoIdsRequest) {
-    return unavailableYouTubeVideoIdsRequest;
+    return waitForUnavailableTrailerCache(unavailableYouTubeVideoIdsRequest);
   }
 
+  const now = Date.now();
+  if (unavailableYouTubeVideoIdsLastLoadedAt && now - unavailableYouTubeVideoIdsLastLoadedAt < UNAVAILABLE_TRAILER_CACHE_REFRESH_MS) {
+    return Promise.resolve();
+  }
+
+  if (unavailableYouTubeVideoIdsLastAttemptAt && now - unavailableYouTubeVideoIdsLastAttemptAt < UNAVAILABLE_TRAILER_CACHE_RETRY_MS) {
+    return Promise.resolve();
+  }
+
+  unavailableYouTubeVideoIdsLastAttemptAt = now;
+  const generation = unavailableYouTubeVideoIdsGeneration;
   const loadRequest = requestJson<UnavailableTrailerListResponse>(
     'media-preview/unavailable-trailers'
   ).then((response) => {
     const videoIds = response?.videoIds ?? response?.VideoIds;
     if (!Array.isArray(videoIds)) {
+      throw new Error('The persistent unavailable trailer cache response is invalid.');
+    }
+
+    if (generation !== unavailableYouTubeVideoIdsGeneration) {
       return;
     }
 
+    serverUnavailableYouTubeVideoIds.clear();
     videoIds.forEach((videoId) => {
       if (typeof videoId === 'string') {
-        unavailableYouTubeVideoIds.add(videoId);
+        serverUnavailableYouTubeVideoIds.add(videoId);
       }
     });
+    unavailableYouTubeVideoIdsLastLoadedAt = Date.now();
   }).catch((error) => {
-    debugLog('Failed to load the persistent unavailable trailer cache.', error);
+    if (generation === unavailableYouTubeVideoIdsGeneration) {
+      debugLog('Failed to load the persistent unavailable trailer cache.', error);
+    }
+  }).finally(() => {
+    if (unavailableYouTubeVideoIdsRequest === loadRequest) {
+      unavailableYouTubeVideoIdsRequest = null;
+    }
   });
 
-  unavailableYouTubeVideoIdsRequest = Promise.race([
-    loadRequest,
+  unavailableYouTubeVideoIdsRequest = loadRequest;
+  return waitForUnavailableTrailerCache(loadRequest);
+}
+
+function waitForUnavailableTrailerCache(request: Promise<void>): Promise<void> {
+  return Promise.race([
+    request,
     new Promise<void>((resolve) => {
       window.setTimeout(resolve, UNAVAILABLE_TRAILER_CACHE_WAIT_MS);
     })
   ]);
+}
 
-  return unavailableYouTubeVideoIdsRequest;
+function getUnavailableTrailerLifetimeMs(): number {
+  return Math.max(1, Number(config.unavailableTrailerRetryDays) || 30) * 24 * 60 * 60 * 1000;
+}
+
+function isYouTubeTrailerUnavailable(videoId: string): boolean {
+  const localExpiration = locallyUnavailableYouTubeVideoIds.get(videoId);
+  if (localExpiration !== undefined) {
+    if (localExpiration > Date.now()) {
+      return true;
+    }
+
+    locallyUnavailableYouTubeVideoIds.delete(videoId);
+  }
+
+  return serverUnavailableYouTubeVideoIds.has(videoId);
+}
+
+export function clearUnavailableTrailerCacheState(): void {
+  unavailableYouTubeVideoIdsGeneration += 1;
+  unavailableYouTubeVideoIdsRequest = null;
+  unavailableYouTubeVideoIdsLastAttemptAt = 0;
+  unavailableYouTubeVideoIdsLastLoadedAt = 0;
+  serverUnavailableYouTubeVideoIds.clear();
+  locallyUnavailableYouTubeVideoIds.clear();
 }
 
 export function markYouTubeTrailerUnavailable(
@@ -63,8 +122,13 @@ export function markYouTubeTrailerUnavailable(
     return;
   }
 
-  const isNew = !unavailableYouTubeVideoIds.has(videoId);
-  unavailableYouTubeVideoIds.add(videoId);
+  const isNew = !isYouTubeTrailerUnavailable(videoId);
+  locallyUnavailableYouTubeVideoIds.set(
+    videoId,
+    config.unavailableTrailerCacheEnabled
+      ? Date.now() + getUnavailableTrailerLifetimeMs()
+      : Number.POSITIVE_INFINITY
+  );
   if (!isNew || !itemId || !config.unavailableTrailerCacheEnabled) {
     return;
   }
@@ -264,7 +328,7 @@ export function isTrailerCandidateAllowed(
   }
 
   if (candidate.provider === 'youtube' && candidate.youtubeId) {
-    return !unavailableYouTubeVideoIds.has(candidate.youtubeId);
+    return !isYouTubeTrailerUnavailable(candidate.youtubeId);
   }
 
   return true;

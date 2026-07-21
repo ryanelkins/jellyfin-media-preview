@@ -38,6 +38,7 @@ export interface PluginConfig {
   trailerAudioEnabled: boolean;
   trailerVolumePercent: number;
   unavailableTrailerCacheEnabled: boolean;
+  unavailableTrailerRetryDays: number;
   hoverDelayMs: number;
   hoverIntentEnabled: boolean;
   hoverIntentThresholdPx: number;

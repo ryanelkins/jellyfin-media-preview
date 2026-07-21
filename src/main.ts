@@ -11,13 +11,14 @@ import { runtimeState } from './runtime';
 import { log } from './core/logger';
 import { config } from './config';
 import { createPublicApi } from './publicApi';
-import { collapseExpandedTrailer } from './trailerOverlay/expandedTrailer';
+import { destroyExpandedTrailerDom } from './trailerOverlay/expandedTrailer';
 import { clearPreviewCaches } from './core/storage';
+import { clearTrickplayPreloads } from './preview/preload';
+import { clearUnavailableTrailerCacheState } from './preview/trailer';
 
 export function destroy(): void {
-  if (runtimeState.expandedTrailerSession) {
-    collapseExpandedTrailer({ immediate: true });
-  }
+  destroyExpandedTrailerDom();
+  clearTrickplayPreloads();
 
   if (runtimeState.observer) {
     runtimeState.observer.disconnect();
@@ -31,6 +32,7 @@ export function destroy(): void {
   unbindUserActivationEvents();
   destroyCardBindings();
   clearPreviewCaches();
+  clearUnavailableTrailerCacheState();
 }
 
 export function start(): void {

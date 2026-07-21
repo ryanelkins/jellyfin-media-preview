@@ -41,7 +41,11 @@ export function ensureExpandedTrailerDom() {
   closeButton.type = 'button';
   closeButton.title = 'Close expanded trailer';
   closeButton.setAttribute('aria-label', 'Close expanded trailer');
-  closeButton.innerHTML = '<span class="material-icons" aria-hidden="true">close</span>';
+  closeButton.innerHTML = [
+    '<svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">',
+    '<path d="M18.3 5.71 12 12 5.7 5.71 4.29 7.12 10.59 13.41 4.29 19.71 5.7 21.12 12 14.83 18.3 21.12 19.71 19.71 13.41 13.41 19.71 7.12z"></path>',
+    '</svg>'
+  ].join('');
 
   ui.appendChild(title);
   ui.appendChild(closeButton);
@@ -63,12 +67,12 @@ export function ensureExpandedTrailerDom() {
   closeButton.addEventListener('click', () => {
     collapseExpandedTrailer();
   });
-  window.addEventListener('keydown', (event) => {
+  const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && runtimeState.expandedTrailerSession) {
       collapseExpandedTrailer();
     }
-  });
-  window.addEventListener('resize', () => {
+  };
+  const onResize = () => {
     if (!runtimeState.expandedTrailerSession) {
       return;
     }
@@ -76,16 +80,41 @@ export function ensureExpandedTrailerDom() {
     const viewportRect = getExpandedTrailerViewportRect(runtimeState.expandedTrailerSession);
     applyExpandedViewportRect(viewport, viewportRect);
     syncExpandedTrailerMediaLayout(runtimeState.expandedTrailerSession);
-  });
+  };
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('resize', onResize);
 
   runtimeState.expandedTrailerDom = {
     overlay,
     viewport,
     mediaHost,
-    title
+    title,
+    onKeyDown,
+    onResize
   };
 
   return runtimeState.expandedTrailerDom;
+}
+
+export function destroyExpandedTrailerDom(): void {
+  if (runtimeState.expandedTrailerSession) {
+    collapseExpandedTrailer({ immediate: true });
+  }
+
+  if (runtimeState.expandedTrailerCollapseTimer !== null) {
+    window.clearTimeout(runtimeState.expandedTrailerCollapseTimer);
+    runtimeState.expandedTrailerCollapseTimer = null;
+  }
+
+  const overlayState = runtimeState.expandedTrailerDom;
+  if (!overlayState) {
+    return;
+  }
+
+  window.removeEventListener('keydown', overlayState.onKeyDown);
+  window.removeEventListener('resize', overlayState.onResize);
+  overlayState.overlay.remove();
+  runtimeState.expandedTrailerDom = null;
 }
 
 export function getExpandedTrailerViewportRect(session: NonNullable<typeof runtimeState.expandedTrailerSession>) {

@@ -24,9 +24,24 @@ const trickplayPreloadQueue: TrickplayPreloadRequest[] = [];
 const trickplayPreloadCache = new Set<string>();
 const trickplayPreloadCards = new WeakMap<Element, TrickplayPreloadRequest>();
 const trickplayPreloadTimers = new WeakMap<Element, number>();
+const trickplayPreloadTimerIds = new Set<number>();
 let activeTrickplayPreloads = 0;
 let trickplayPreloadTimer: number | null = null;
+let trickplayPreloadGeneration = 0;
 const trickplayPreloadIntentDelayMs = 150;
+const trickplayPreloadCacheLimit = 2000;
+
+function addTrickplayPreloadCacheKey(key: string): void {
+  while (trickplayPreloadCache.size >= trickplayPreloadCacheLimit) {
+    const oldestKey = trickplayPreloadCache.values().next().value as string | undefined;
+    if (oldestKey === undefined) {
+      break;
+    }
+    trickplayPreloadCache.delete(oldestKey);
+  }
+
+  trickplayPreloadCache.add(key);
+}
 
 function getMaxConcurrentTrickplayPreloads(): number {
   return Math.max(1, Math.floor(Number(config.trickplayPreloadLimit) || 2));
@@ -66,6 +81,7 @@ function processTrickplayPreloadQueue(): void {
     }
 
     activeTrickplayPreloads += 1;
+    const generation = trickplayPreloadGeneration;
     getPreloadPreviewSource(request.itemId, request.itemType)
       .then((previewSource) => {
         if (!previewSourceUsesTrickplay(previewSource)) {
@@ -75,12 +91,18 @@ function processTrickplayPreloadQueue(): void {
         return getTrickplayPreview(request.itemId, request.percent);
       })
       .then((preview) => {
-        preloadTileUrls(preview);
+        if (generation === trickplayPreloadGeneration) {
+          preloadTileUrls(preview);
+        }
       })
       .catch((error) => {
         debugLog('Trickplay preload failed.', request.itemId, error);
       })
       .finally(() => {
+        if (generation !== trickplayPreloadGeneration) {
+          return;
+        }
+
         activeTrickplayPreloads = Math.max(0, activeTrickplayPreloads - 1);
         if (trickplayPreloadQueue.length) {
           scheduleTrickplayPreloadQueue();
@@ -105,7 +127,7 @@ export function queueTrickplayPreload(
     return;
   }
 
-  trickplayPreloadCache.add(preloadKey);
+  addTrickplayPreloadCacheKey(preloadKey);
   trickplayPreloadQueue.push({
     itemId,
     itemType,
@@ -126,10 +148,12 @@ export function scheduleTrickplayPreload(
 
   cancelScheduledTrickplayPreload(card);
   const timer = window.setTimeout(() => {
+    trickplayPreloadTimerIds.delete(timer);
     trickplayPreloadTimers.delete(card);
     queueTrickplayPreload(itemId, percent, itemType);
   }, trickplayPreloadIntentDelayMs);
   trickplayPreloadTimers.set(card, timer);
+  trickplayPreloadTimerIds.add(timer);
 }
 
 export function cancelScheduledTrickplayPreload(card: HTMLElement): void {
@@ -140,6 +164,7 @@ export function cancelScheduledTrickplayPreload(card: HTMLElement): void {
 
   window.clearTimeout(timer);
   trickplayPreloadTimers.delete(card);
+  trickplayPreloadTimerIds.delete(timer);
 }
 
 function getTrickplayPreloadObserver(): IntersectionObserver | null {
@@ -202,6 +227,22 @@ export function disconnectTrickplayPreloadObserver(): void {
     runtimeState.trickplayPreloadObserver.disconnect();
     runtimeState.trickplayPreloadObserver = null;
   }
+}
+
+export function clearTrickplayPreloads(): void {
+  trickplayPreloadGeneration += 1;
+  disconnectTrickplayPreloadObserver();
+
+  if (trickplayPreloadTimer !== null) {
+    window.clearTimeout(trickplayPreloadTimer);
+    trickplayPreloadTimer = null;
+  }
+
+  trickplayPreloadTimerIds.forEach((timer) => window.clearTimeout(timer));
+  trickplayPreloadTimerIds.clear();
+  trickplayPreloadQueue.length = 0;
+  trickplayPreloadCache.clear();
+  activeTrickplayPreloads = 0;
 }
 
 export function preloadTileUrls(preview: TrickplayPreview | null | undefined): void {

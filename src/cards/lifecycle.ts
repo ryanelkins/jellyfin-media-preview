@@ -500,7 +500,12 @@ export function setTrailerExpandVisible(state: CardState | null | undefined, isV
   }
 
   applyTrailerExpandButtonSettings(state);
-  state.trailerActions.style.display = isVisible && config.trailerExpandButtonEnabled ? 'block' : 'none';
+  const shouldShow = isVisible && config.trailerExpandButtonEnabled;
+  state.trailerActions.style.display = shouldShow ? 'block' : 'none';
+  state.trailerActions.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  if (state.trailerExpandButton) {
+    state.trailerExpandButton.tabIndex = shouldShow ? 0 : -1;
+  }
 }
 
 export function applyMetadataOverlaySettings(state: CardState | null | undefined): void {

@@ -73,6 +73,8 @@ export interface ExpandedTrailerDom {
   viewport: HTMLDivElement;
   mediaHost: HTMLDivElement;
   title: HTMLDivElement;
+  onKeyDown: (event: KeyboardEvent) => void;
+  onResize: () => void;
 }
 
 export interface ExpandedTrailerSession {
