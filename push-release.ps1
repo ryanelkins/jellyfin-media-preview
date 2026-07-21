@@ -7,6 +7,9 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectFile = Join-Path $repoRoot "Jellyfin.Plugin.MediaPreview\Jellyfin.Plugin.MediaPreview.csproj"
+$packageJsonFile = Join-Path $repoRoot "package.json"
+$packageLockFile = Join-Path $repoRoot "package-lock.json"
+$syncFrontendVersionScript = Join-Path $repoRoot "scripts\sync-frontend-version.mjs"
 
 Set-Location $repoRoot
 
@@ -62,6 +65,27 @@ function Set-ProjectVersion {
     $xmlWriter.Flush()
     $xmlWriter.Close()
     [System.IO.File]::WriteAllText($projectFile, $stringWriter.ToString(), $utf8NoBom)
+}
+
+function Sync-FrontendVersion {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$NewVersion
+    )
+
+    if (-not (Test-Path -LiteralPath $syncFrontendVersionScript)) {
+        throw "Frontend version sync script not found: $syncFrontendVersionScript"
+    }
+
+    & node $syncFrontendVersionScript $NewVersion
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to synchronize frontend package version to $NewVersion."
+    }
+
+    git add $packageJsonFile $packageLockFile
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to stage synchronized frontend package versions."
+    }
 }
 
 function Read-VersionInteractively {
@@ -164,6 +188,8 @@ if (
     }
 }
 
+Sync-FrontendVersion -NewVersion $version
+
 if ([string]::IsNullOrWhiteSpace($Tag)) {
     $Tag = "v$version"
 }
@@ -171,6 +197,7 @@ if ([string]::IsNullOrWhiteSpace($Tag)) {
 while (Test-TagExists -CandidateTag $Tag) {
     $version = Read-VersionInteractively -CurrentVersion $version
     Set-ProjectVersion -NewVersion $version
+    Sync-FrontendVersion -NewVersion $version
     git add $projectFile
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to stage updated project version."

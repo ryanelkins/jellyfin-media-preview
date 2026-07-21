@@ -164,6 +164,7 @@ $zipPath = Join-RepoPath @($releaseRoot, "$pluginName.zip")
 $bundlePath = Join-RepoPath @($repoRoot, "dist", "mediapreview.bundle.js")
 $configBundlePath = Join-RepoPath @($repoRoot, "dist", "config.bundle.js")
 $verifyScript = Join-RepoPath @($repoRoot, "scripts", "verify-embedded-bundle.ps1")
+$syncFrontendVersionScript = Join-RepoPath @($repoRoot, "scripts", "sync-frontend-version.mjs")
 
 try {
     Step "Reading project metadata"
@@ -185,6 +186,12 @@ try {
     if ($assemblyVersion -ne $pluginVersion -or $fileVersion -ne $pluginVersion) {
         throw "Project versions must match before packaging. Version=$pluginVersion AssemblyVersion=$assemblyVersion FileVersion=$fileVersion"
     }
+
+    if (-not (Test-Path -LiteralPath $syncFrontendVersionScript)) {
+        throw "Frontend version sync script not found: $syncFrontendVersionScript"
+    }
+
+    Run "node" @($syncFrontendVersionScript, $pluginVersion, "--check") "Frontend package versions do not match plugin version."
 
     $controllerVersion = Get-PackageVersion -ProjectXml $projectXml -PackageName "Jellyfin.Controller"
 
