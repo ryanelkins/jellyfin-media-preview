@@ -6,6 +6,8 @@ public sealed class PluginConfiguration : BasePluginConfiguration
 {
     public bool Enabled { get; set; } = true;
 
+    public string FrontendInjectionMethod { get; set; } = FrontendInjectionMethods.Automatic;
+
     public int HoverDelayMs { get; set; } = 300;
 
     public bool HoverIntentEnabled { get; set; } = false;

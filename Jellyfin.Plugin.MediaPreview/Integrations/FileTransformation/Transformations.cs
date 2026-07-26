@@ -17,6 +17,12 @@ public static class Transformations
     public static string IndexTransformation(PatchRequestPayload payload)
     {
         string contents = payload.Contents ?? string.Empty;
+        PluginConfiguration configuration = PluginConfigurationNormalizer.Normalize(Plugin.Instance?.Configuration);
+        if (configuration.FrontendInjectionMethod == FrontendInjectionMethods.JavaScriptInjector)
+        {
+            return ScriptMarkerRegex.Replace(contents, string.Empty);
+        }
+
         string scriptTag = BuildScriptTag();
         string stripped = ScriptMarkerRegex.Replace(contents, string.Empty);
 

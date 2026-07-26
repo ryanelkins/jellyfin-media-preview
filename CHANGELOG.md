@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Add selectable frontend injection through Jellyfin JavaScript Injector or File Transformation, with automatic File Transformation preference.
+
 ## v0.2.3.0 - 2026-07-15
 
 

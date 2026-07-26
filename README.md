@@ -18,17 +18,19 @@ Hover a movie, series, or episode card and the plugin can show a quick preview u
 ## Requirements
 
 - Jellyfin with the web interface
-- The [File Transformation](https://www.iamparadox.dev/jellyfin/plugins/manifest.json) plugin
+- One frontend injection plugin:
+  - [File Transformation](https://www.iamparadox.dev/jellyfin/plugins/manifest.json), or
+  - [JavaScript Injector](https://github.com/n00bcodr/Jellyfin-JavaScript-Injector)
 - Trickplay data, trailer metadata, or both for the items you want to preview
 
 Media Preview does not generate Trickplay data or fetch trailer metadata. It uses preview data that Jellyfin already has.
 
 ## Installation
 
-Install both plugins:
+Install Media Preview and one frontend injection plugin:
 
 1. `Media Preview`
-2. `File Transformation`
+2. `File Transformation` or `JavaScript Injector`
 
 ### Media Preview
 
@@ -53,7 +55,22 @@ Install both plugins:
 2. Install `File Transformation`.
 3. Restart Jellyfin.
 
-Without File Transformation, Media Preview cannot load inside Jellyfin Web.
+### JavaScript Injector (alternative)
+
+1. Add the JavaScript Injector repository:
+
+   ```text
+   https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/10.11/manifest.json
+   ```
+
+2. Install `JavaScript Injector`.
+3. Restart Jellyfin.
+
+Media Preview registers its loader with JavaScript Injector automatically. You do not need to paste a script into the injector settings.
+
+You only need one of the two injection plugins. If both are installed, Media Preview prevents duplicate frontend initialization.
+
+When both are installed, `Automatic` prefers File Transformation. You can choose `File Transformation only` or `JavaScript Injector only` under `Media Preview -> Advanced -> Frontend Injection Method`. Restart Jellyfin after changing the method.
 
 ## Setup
 
@@ -79,7 +96,7 @@ If no supported preview source is available for an item, the card stays unchange
 
 If previews do not show up:
 
-1. Make sure both `Media Preview` and `File Transformation` are installed and enabled.
+1. Make sure `Media Preview` and either `JavaScript Injector` or `File Transformation` are installed and enabled.
 2. Restart Jellyfin after installing or updating plugins.
 3. Hard-refresh Jellyfin Web in your browser.
 4. Check whether the item has Trickplay or trailer data.

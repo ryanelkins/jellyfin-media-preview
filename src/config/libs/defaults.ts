@@ -2,6 +2,7 @@ import type {
   AutoScrubMode,
   AutoScrubPreset,
   ContentTypePreviewSource,
+  FrontendInjectionMethod,
   HoverMode,
   PreviewBackdropMode,
   PreviewMode,
@@ -19,6 +20,7 @@ export type StoreConfigValue = string | number | boolean | unknown[];
 
 export const CONFIG_DEFAULTS = {
   Enabled: true,
+  FrontendInjectionMethod: 'automatic' as FrontendInjectionMethod,
   PreviewSource: 'trickplay' as PreviewSource,
   MoviePreviewSource: 'inherit' as ContentTypePreviewSource,
   SeriesPreviewSource: 'inherit' as ContentTypePreviewSource,

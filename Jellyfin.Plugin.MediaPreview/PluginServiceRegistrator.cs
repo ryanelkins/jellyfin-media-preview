@@ -11,6 +11,6 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
         serviceCollection.AddSingleton<UnavailableTrailerStore>();
-        serviceCollection.AddHostedService<FileTransformationRegistrationHostedService>();
+        serviceCollection.AddHostedService<FrontendRegistrationHostedService>();
     }
 }

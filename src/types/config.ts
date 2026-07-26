@@ -4,6 +4,10 @@ export type PreviewSource =
   | 'prefer-trickplay'
   | 'prefer-trailer';
 export type ContentTypePreviewSource = PreviewSource | 'inherit';
+export type FrontendInjectionMethod =
+  | 'automatic'
+  | 'file-transformation'
+  | 'javascript-injector';
 
 export interface LibraryPreviewSourceOverride {
   libraryId: string;
@@ -28,6 +32,7 @@ export type TrailerExpandButtonPosition =
 
 export interface PluginConfig {
   enabled: boolean;
+  frontendInjectionMethod: FrontendInjectionMethod;
   previewSource: PreviewSource;
   moviePreviewSource: ContentTypePreviewSource;
   seriesPreviewSource: ContentTypePreviewSource;

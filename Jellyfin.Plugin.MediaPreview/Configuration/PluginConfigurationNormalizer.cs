@@ -2,6 +2,13 @@ namespace Jellyfin.Plugin.MediaPreview;
 
 internal static class PluginConfigurationNormalizer
 {
+    private static readonly HashSet<string> ValidFrontendInjectionMethods = new(StringComparer.Ordinal)
+    {
+        FrontendInjectionMethods.Automatic,
+        FrontendInjectionMethods.FileTransformation,
+        FrontendInjectionMethods.JavaScriptInjector
+    };
+
     private static readonly HashSet<string> ValidPreviewSources = new(StringComparer.Ordinal)
     {
         "trickplay",
@@ -107,6 +114,10 @@ internal static class PluginConfigurationNormalizer
         PluginConfiguration normalized = new PluginConfiguration
         {
             Enabled = source.Enabled,
+            FrontendInjectionMethod = NormalizeChoice(
+                source.FrontendInjectionMethod,
+                ValidFrontendInjectionMethods,
+                FrontendInjectionMethods.Automatic),
             PreviewSource = NormalizeChoice(source.PreviewSource, ValidPreviewSources, "trickplay"),
             MoviePreviewSource = NormalizeChoice(source.MoviePreviewSource, ValidContentTypePreviewSources, "inherit"),
             SeriesPreviewSource = NormalizeChoice(source.SeriesPreviewSource, ValidContentTypePreviewSources, "inherit"),

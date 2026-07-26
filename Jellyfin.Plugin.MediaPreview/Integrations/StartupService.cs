@@ -16,14 +16,19 @@ public sealed class StartupService : IScheduledTask
 
     public string Key => "Jellyfin.Plugin.MediaPreview.Startup";
 
-    public string Description => "Registers the media preview frontend injection through the File Transformation plugin.";
+    public string Description => "Registers the media preview frontend through JavaScript Injector or File Transformation.";
 
     public string Category => "Startup Services";
 
     public Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Registering Media Preview file transformation.");
-        FileTransformationRegistrar.TryRegister(_logger);
+        _logger.LogInformation("Registering the Media Preview frontend loader.");
+        if (!FrontendRegistration.TryRegisterConfigured(_logger))
+        {
+            _logger.LogWarning(
+                "Media Preview could not register a frontend loader. Install either JavaScript Injector or File Transformation.");
+        }
+
         return Task.CompletedTask;
     }
 

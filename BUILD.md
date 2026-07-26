@@ -40,11 +40,18 @@ The Vue configuration UI uses a generic store. For a new plugin setting such as
 
 `store.loadConfig()` loads the plugin configuration and keeps unknown server fields. `store.saveConfig()` serializes the current store back to Jellyfin automatically. Add the field to `src/config/libs/defaults.ts` only when the UI needs a frontend fallback before the server has returned the plugin config.
 
-The `File Transformation` plugin injects one deferred external script tag into Jellyfin Web:
+## Frontend Injection
+
+Media Preview supports two frontend loaders:
+
+- `JavaScript Injector` registers a small loader through its plugin interface.
+- `File Transformation` injects one deferred external script tag into Jellyfin Web:
 
 - `<script FileTransformation="true" plugin="MediaPreview" defer="defer" src="/media-preview/script"></script>`
 
-## Deploying Through File Transformation
+Both loaders request the same `/media-preview/script` endpoint and account for Jellyfin's configured base URL. `Automatic` prefers File Transformation and falls back to JavaScript Injector. Administrators can force either integration from the Advanced settings. The JavaScript Injector loader detects the File Transformation script and the initialized Media Preview global, so using both plugins does not initialize the frontend twice.
+
+## Deploying
 
 For normal plugin development and release packaging:
 
@@ -52,7 +59,7 @@ For normal plugin development and release packaging:
 2. Run `dotnet build Jellyfin.Plugin.MediaPreview/Jellyfin.Plugin.MediaPreview.csproj`
 3. Install or package the resulting plugin assembly as usual
 
-`File Transformation` continues to inject the external `/media-preview/script` URL. The served script body comes from the embedded `dist/mediapreview.bundle.js` bundle. The plugin configuration page loads its Vue app from the embedded `dist/config.bundle.js` bundle through `/media-preview/config-script`.
+Either `JavaScript Injector` or `File Transformation` loads the external `/media-preview/script` URL. The served script body comes from the embedded `dist/mediapreview.bundle.js` bundle. The plugin configuration page loads its Vue app from the embedded `dist/config.bundle.js` bundle through `/media-preview/config-script`.
 
 ## Release Packaging
 

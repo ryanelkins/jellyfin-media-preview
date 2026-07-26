@@ -29,14 +29,14 @@ internal static class FileTransformationRegistrar
 
             if (fileTransformationAssembly is null)
             {
-                logger.LogWarning("File Transformation plugin was not found. Media Preview registration will be retried.");
+                logger.LogDebug("File Transformation plugin was not found.");
                 return false;
             }
 
             Type? pluginInterfaceType = fileTransformationAssembly.GetType(FileTransformationInterfaceTypeName);
             if (pluginInterfaceType is null)
             {
-                logger.LogWarning("File Transformation plugin interface was not found. Media Preview registration will be retried.");
+                logger.LogWarning("File Transformation plugin interface was not found.");
                 return false;
             }
 

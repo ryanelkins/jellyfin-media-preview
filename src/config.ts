@@ -32,6 +32,7 @@ import type { LibraryPreviewSourceOverride, PluginConfig, RuntimePluginConfig } 
 // for standalone development or unexpected non-plugin loading.
 const standaloneFallbackConfig: PluginConfig = {
   enabled: true,
+  frontendInjectionMethod: 'automatic',
   previewSource: PREVIEW_SOURCE_TRICKPLAY,
   moviePreviewSource: PREVIEW_SOURCE_INHERIT,
   seriesPreviewSource: PREVIEW_SOURCE_INHERIT,
@@ -109,6 +110,10 @@ export const config: PluginConfig = {
 } as PluginConfig;
 
 export function normalizeConfig(): void {
+  if (!['automatic', 'file-transformation', 'javascript-injector'].includes(config.frontendInjectionMethod)) {
+    config.frontendInjectionMethod = 'automatic';
+  }
+
   const runtimeAutoScrubMode = String(config.autoScrubMode);
   if (runtimeAutoScrubMode === 'smooth') {
     config.autoScrubMode = AUTO_SCRUB_MODE_SWEEP;
