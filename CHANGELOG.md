@@ -6,6 +6,137 @@
 
 - Add selectable frontend injection through Jellyfin JavaScript Injector or File Transformation, with automatic File Transformation preference.
 
+## v0.3.0.1 - 2026-07-21
+
+
+
+
+
+
+
+
+
+
+
+### Fixes
+
+- fix(trailer): keep expand button above card overlay
+
+
+
+
+
+
+## v0.3.0.0 - 2026-07-21
+
+
+
+
+
+
+
+
+
+
+### Features
+
+- feat(cards): support portrait expansion in wrapped rows
+
+- feat(trailer): persist unavailable YouTube sources
+
+- feat(trailer): sync unavailable sources with server
+
+- feat(config): configure unavailable trailer retry interval
+
+- feat(config): toggle unavailable trailer cache
+
+
+
+### Fixes
+
+- fix(cards): enhance card selection logic and exclude non-playable media cards
+
+- fix(apiClient): added Jellyfin 12 support
+
+- fix(trailer): skip unavailable YouTube embeds
+
+- fix(trailer): read persisted unavailable source ids
+
+
+
+### Build
+
+- build(dist): refresh preview bundles
+
+
+
+
+### Refactoring
+
+- refactor(navigation): improve plugin configuration link handling and update navigation entry logic for Jellyfin 12.0
+
+
+
+## v0.2.4.1 - 2026-07-17
+
+
+
+
+
+
+
+
+
+
+
+### Fixes
+
+- fix(config): live preview grid
+
+
+
+
+
+
+## v0.2.4.0 - 2026-07-17
+
+
+
+
+
+
+
+
+
+
+### Features
+
+- feat(trailer): enhance portrait card expansion with source aspect ratio support
+
+- feat(appearance): add 'Source / Video ratio' option for portrait card expansion
+
+
+
+
+
+
+
+## v0.2.3.1 - 2026-07-15
+
+
+
+
+
+
+
+
+
+
+
+### Fixes
+
+- fix(appearance): shift wide previews into viewport
+
 ## v0.2.3.0 - 2026-07-15
 
 
