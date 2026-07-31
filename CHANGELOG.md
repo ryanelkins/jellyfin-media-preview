@@ -1,12 +1,6 @@
 # Changelog
 
-## Unreleased
-
-### Features
-
-- Add selectable frontend injection through Jellyfin JavaScript Injector or File Transformation, with automatic File Transformation preference.
-
-## v0.3.0.1 - 2026-07-21
+## v0.3.1.0 - 2026-07-31
 
 
 
@@ -20,85 +14,72 @@
 
 ### Fixes
 
-- fix(trailer): keep expand button above card overlay
+- fix(layout): Mount list row previews on the thumbnail instead of the row (#18)
+
+getImageRenderHost falls through to imageElement.parentElement for list rows,
+which is the full-width .listItem. Since .jmp-preview-layer is inset:0 the
+preview then spans the entire row rather than the episode thumbnail.
+
+The function already early-returns for .cardImageContainer and .cardPadder.
+List rows have neither, so add the missing case ahead of the parent fallback.
+Card layouts are unaffected because they return at the earlier branches.
+
+- fix(hover): Scope preview teardown to the card rather than the hover host (#19)
+
+Hovering a card's own overlay buttons stops the preview, so the trailer expand
+button cannot be reached. bindCard attaches pointerleave and mouseleave straight
+to the image host with no relatedTarget check, and Jellyfin places the overlay
+buttons as siblings of that host inside .cardScalable. The delegated pointerout
+and mouseout handlers carry the same assumption via getHoverCardFromEventTarget.
+
+Split out getCardFromEventTarget, which resolves the card an event target
+belongs to without requiring it to sit inside the hover host, and use it for
+leave decisions on both event.target and event.relatedTarget.
+
+Guarding only relatedTarget is not enough. Once the pointer steps off the hover
+host onto another part of the same card, pointerleave never fires again and the
+delegated handler's hover host lookup on event.target returns null, so that card
+is never torn down when the pointer reaches the next one, leaving several
+previews playing at once.
+
+Enter and move handlers stay hover host scoped on purpose. Making them
+permissive means moving from a card's text onto its image resolves
+previousCard === card, skips handlePointerEnter, and no preview starts.
+
+- fix(trailer): Loop hover trailers through the player API instead of a playlist (#20)
+
+A single video can only loop through loop=1 when playlist names the same id,
+which makes the embed a playlist and draws previous and next navigation over
+the preview. controls=0 does not suppress that.
+
+monitorYouTubeEmbed already wraps the preview iframe in a YT.Player for error
+handling, so drive the loop from onStateChange instead: seek to 0 and replay on
+ENDED, and let callers opt out of the playlist based loop.
+
+The expanded overlay keeps the playlist loop. It has no player monitor and runs
+with controls enabled, where the full player UI is intended.
+
+Looping now depends on the iframe API being reachable, so a blocked API script
+means the preview plays once rather than repeating. Reloading the iframe with
+the playlist URL was rejected as a fallback because it restarts playback part
+way through a preview.
 
 
 
 
 
 
-## v0.3.0.0 - 2026-07-21
+### Other
+
+- Merge remote-tracking branch 'origin/main' into dev
+
+# Conflicts:
+#	CHANGELOG.md
+
+- chore: update nanoid and postcss dependencies to latest versions
 
 
-
-
-
-
-
-
-
-
-### Features
-
-- feat(cards): support portrait expansion in wrapped rows
-
-- feat(trailer): persist unavailable YouTube sources
-
-- feat(trailer): sync unavailable sources with server
-
-- feat(config): configure unavailable trailer retry interval
-
-- feat(config): toggle unavailable trailer cache
-
-
-
-### Fixes
-
-- fix(cards): enhance card selection logic and exclude non-playable media cards
-
-- fix(apiClient): added Jellyfin 12 support
-
-- fix(trailer): skip unavailable YouTube embeds
-
-- fix(trailer): read persisted unavailable source ids
-
-
-
-### Build
-
-- build(dist): refresh preview bundles
-
-
-
-
-### Refactoring
-
-- refactor(navigation): improve plugin configuration link handling and update navigation entry logic for Jellyfin 12.0
-
-
-
-## v0.2.4.1 - 2026-07-17
-
-
-
-
-
-
-
-
-
-
-
-### Fixes
-
-- fix(config): live preview grid
-
-
-
-
-
-
-## v0.2.4.0 - 2026-07-17
+## v0.2.3.1 - 2026-07-15
 
 
 
@@ -115,27 +96,56 @@
 
 - feat(appearance): add 'Source / Video ratio' option for portrait card expansion
 
+- feat(cards): support portrait expansion in wrapped rows
 
+- feat(trailer): persist unavailable YouTube sources
 
+- feat(trailer): sync unavailable sources with server
 
+- feat(config): configure unavailable trailer retry interval
 
+- feat(config): toggle unavailable trailer cache
 
-
-## v0.2.3.1 - 2026-07-15
-
-
-
-
-
-
-
-
+- feat: support JavaScript Injector
 
 
 
 ### Fixes
 
 - fix(appearance): shift wide previews into viewport
+
+- fix(config): live preview grid
+
+- fix(cards): enhance card selection logic and exclude non-playable media cards
+
+- fix(apiClient): added Jellyfin 12 support
+
+- fix(trailer): skip unavailable YouTube embeds
+
+- fix(trailer): read persisted unavailable source ids
+
+- fix(trailer): keep expand button above card overlay
+
+- fix(trailer): render expand icon as svg
+
+- fix(runtime): harden preview cleanup and caches
+
+
+
+### Build
+
+- build(dist): refresh preview bundles
+
+- build: synchronize release versions
+
+
+
+
+### Refactoring
+
+- refactor(navigation): improve plugin configuration link handling and update navigation entry logic for Jellyfin 12.0
+
+
 
 ## v0.2.3.0 - 2026-07-15
 
