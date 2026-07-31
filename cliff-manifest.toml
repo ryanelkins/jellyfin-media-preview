@@ -7,27 +7,32 @@ body = """
 {% set docs = commits | filter(attribute="group", value="Documentation") -%}
 {% set refactors = commits | filter(attribute="group", value="Refactoring") -%}
 {% set other = commits | filter(attribute="group", value="Other") -%}
+
 {% for commit in features -%}
-- {{ commit.message }}
+- {{ commit.message | split(pat="\n") | first | trim }}
 {% endfor -%}
 {% for commit in fixes -%}
-- {{ commit.message }}
+- {{ commit.message | split(pat="\n") | first | trim }}
 {% endfor -%}
 {% for commit in builds -%}
-- {{ commit.message }}
+- {{ commit.message | split(pat="\n") | first | trim }}
 {% endfor -%}
 {% for commit in docs -%}
-- {{ commit.message }}
+- {{ commit.message | split(pat="\n") | first | trim }}
 {% endfor -%}
 {% for commit in refactors -%}
-- {{ commit.message }}
+- {{ commit.message | split(pat="\n") | first | trim }}
 {% endfor -%}
 {% for commit in other -%}
-- {{ commit.message }}
+- {{ commit.message | split(pat="\n") | first | trim }}
 {% endfor -%}
 """
 trim = true
 footer = ""
+
+postprocessors = [
+  { pattern = '\n{3,}', replace = "\n\n" },
+]
 
 [git]
 conventional_commits = false
@@ -36,7 +41,7 @@ split_commits = false
 tag_pattern = "v[0-9].*"
 skip_tags = ""
 ignore_tags = ""
-topo_order = false
+topo_order = true
 sort_commits = "oldest"
 
 [[git.commit_parsers]]
@@ -48,11 +53,7 @@ message = "^Update changelog and manifest for v.*"
 skip = true
 
 [[git.commit_parsers]]
-message = "^Merge branch .*"
-skip = true
-
-[[git.commit_parsers]]
-message = "^Merge pull request .*"
+message = "^Merge .*"
 skip = true
 
 [[git.commit_parsers]]

@@ -6,54 +6,20 @@ body = """
 {% else -%}
 ## Unreleased
 {% endif %}
+{% for group, commits in commits | filter(attribute="merge_commit", value=false) | group_by(attribute="group") %}
 
-{% set features = commits | filter(attribute="group", value="Features") %}
-{% set fixes = commits | filter(attribute="group", value="Fixes") %}
-{% set builds = commits | filter(attribute="group", value="Build") %}
-{% set docs = commits | filter(attribute="group", value="Documentation") %}
-{% set refactors = commits | filter(attribute="group", value="Refactoring") %}
-{% set other = commits | filter(attribute="group", value="Other") %}
+### {{ group | striptags | trim }}
 
-{% if features | length > 0 %}
-### Features
-{% for commit in features %}
-- {{ commit.message }}
+{% for commit in commits -%}
+- {{ commit.message | split(pat="\n") | first | trim }}
+{% endfor -%}
 {% endfor %}
-{% endif %}
-{% if fixes | length > 0 %}
-### Fixes
-{% for commit in fixes %}
-- {{ commit.message }}
-{% endfor %}
-{% endif %}
-{% if builds | length > 0 %}
-### Build
-{% for commit in builds %}
-- {{ commit.message }}
-{% endfor %}
-{% endif %}
-{% if docs | length > 0 %}
-### Documentation
-{% for commit in docs %}
-- {{ commit.message }}
-{% endfor %}
-{% endif %}
-{% if refactors | length > 0 %}
-### Refactoring
-{% for commit in refactors %}
-- {{ commit.message }}
-{% endfor %}
-{% endif %}
-{% if other | length > 0 %}
-### Other
-{% for commit in other %}
-- {{ commit.message }}
-{% endfor %}
-{% endif %}
-
 """
 trim = true
 footer = ""
+postprocessors = [
+  { pattern = '\n{3,}', replace = "\n\n" },
+]
 
 [git]
 conventional_commits = false
@@ -62,7 +28,8 @@ split_commits = false
 tag_pattern = "v[0-9].*"
 skip_tags = ""
 ignore_tags = ""
-topo_order = false
+topo_order = true
+topo_order_commits = true
 sort_commits = "oldest"
 
 [[git.commit_parsers]]
@@ -74,11 +41,7 @@ message = "^Update changelog and manifest for v.*"
 skip = true
 
 [[git.commit_parsers]]
-message = "^Merge branch .*"
-skip = true
-
-[[git.commit_parsers]]
-message = "^Merge pull request .*"
+message = "^Merge .*"
 skip = true
 
 [[git.commit_parsers]]
@@ -87,24 +50,24 @@ skip = true
 
 [[git.commit_parsers]]
 message = "^feat"
-group = "Features"
+group = "<!-- 0 -->Features"
 
 [[git.commit_parsers]]
 message = "^fix"
-group = "Fixes"
+group = "<!-- 1 -->Fixes"
 
 [[git.commit_parsers]]
 message = "^build"
-group = "Build"
+group = "<!-- 2 -->Build"
 
 [[git.commit_parsers]]
 message = "^docs"
-group = "Documentation"
+group = "<!-- 3 -->Documentation"
 
 [[git.commit_parsers]]
 message = "^refactor"
-group = "Refactoring"
+group = "<!-- 4 -->Refactoring"
 
 [[git.commit_parsers]]
 message = ".*"
-group = "Other"
+group = "<!-- 5 -->Other"
