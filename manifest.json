@@ -10,7 +10,7 @@
   "versions": [
     {
       "version": "0.3.1.0",
-      "changelog": "- feat: support JavaScript Injector\n- fix(trailer): render expand icon as svg\n- fix(runtime): harden preview cleanup and caches\n- fix(layout): Mount list row previews on the thumbnail instead of the row (#18\n- fix(hover): Scope preview teardown to the card rather than the hover host (#19)\n- fix(trailer): Loop hover trailers through the player API instead of a playlist (#20)\n- build: synchronize release versions\n- chore: update nanoid and postcss dependencies to latest versions\n",
+      "changelog": "- feat: support JavaScript Injector\n- fix(trailer): render expand icon as svg\n- fix(runtime): harden preview cleanup and caches\n- fix(layout): Mount list row previews on the thumbnail instead of the row (#18)\n- fix(hover): Scope preview teardown to the card rather than the hover host (#19)\n- fix(trailer): Loop hover trailers through the player API instead of a playlist (#20)\n- build: synchronize release versions\n- chore: update nanoid and postcss dependencies to latest versions\n",
       "targetAbi": "10.11.11.0",
       "sourceUrl": "https://github.com/spkesDE/jellyfin-media-preview-plugin/releases/download/v0.3.1.0/MediaPreview.zip",
       "checksum": "50ece21a24a35c573e5007983081020f",
