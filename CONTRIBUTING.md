@@ -21,7 +21,7 @@ Examples include:
 Please check:
 
 - is there already an issue or discussion for this?
-- is the change compatible with Jellyfin `10.11.11`?
+- is the change compatible with the latest supported Jellyfin version?
 - does normal card behavior still work?
 
 ## Local Development
@@ -45,26 +45,18 @@ That creates:
 
 ## Commit Style
 
-This repository uses `git-cliff` to generate `CHANGELOG.md`, GitHub release notes, and the latest `manifest.json` changelog entry from commit messages between release tags.
+This repository uses `git-cliff` to generate `CHANGELOG.md`, GitHub release notes, and the changelog entry for the latest version in `manifest.json`.
 
 Because of that, commit messages should be short, clear, and useful on their own.
 
 Good examples:
 
 ```text
-fix: restore hover preview on series cards
-feat: add trailer fallback for missing trickplay
+fix(hover): restore hover preview on series cards
+feat(trailer): add trailer fallback for missing trickplay
 docs: rewrite README for end users
 refactor: simplify preview source selection
 build: update Jellyfin packages to 10.11.11
-```
-
-Also fine if you do not want strict conventional commits, as long as the message is readable:
-
-```text
-Fix hover preview on series cards
-Improve trailer fallback handling
-Update README for end users
 ```
 
 Avoid vague commit messages like:
@@ -82,6 +74,7 @@ more changes
 - explain the problem and the fix clearly
 - mention the Jellyfin version you tested against
 - update docs when behavior, install steps, or release flow changes
+- target the `dev` branch with pull requests
 
 ## Manual Testing
 
