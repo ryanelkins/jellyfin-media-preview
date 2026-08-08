@@ -17,7 +17,7 @@ export function isPluginConfigurationLink(
 export function getAdminNavigationContainers(): HTMLElement[] {
   const containers = new Set<HTMLElement>();
 
-  // Jellyfin 12 MUI navigation
+  // Jellyfin 12 MUI side navigation
   const muiPluginsContainer =
     document.querySelector<HTMLElement>(
       'ul[aria-labelledby="plugins-subheader"]'
@@ -26,25 +26,6 @@ export function getAdminNavigationContainers(): HTMLElement[] {
   if (muiPluginsContainer) {
     containers.add(muiPluginsContainer);
   }
-
-  // Jellyfin 10.11 and generic fallback
-  const pluginLinks = Array.from(
-    document.querySelectorAll(
-      'a[href*="#/configurationpage?name="]'
-    )
-  ).filter((link) => {
-    return (
-      isPluginConfigurationLink(link) &&
-      (link.getAttribute('href') || '') !==
-        CONFIGURATION_PAGE_HASH
-    );
-  });
-
-  pluginLinks.forEach((link) => {
-    if (link.parentElement) {
-      containers.add(link.parentElement);
-    }
-  });
 
   return Array.from(containers);
 }
