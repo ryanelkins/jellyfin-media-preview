@@ -3,6 +3,7 @@ import { runtimeState } from '../runtime';
 import { debugLog } from '../core/logger';
 import { getCardFromEventTarget, getHoverCardFromEventTarget } from '../cards/discovery';
 import { handlePointerEnter, handlePointerLeave, handlePointerMove } from './hover';
+import { touchDebugCount, touchDebugPointerType } from './touchDebugOverlay';
 
 /*
  * Touch scrubbing.
@@ -34,6 +35,7 @@ interface TouchGesture {
 }
 
 let gesture: TouchGesture | null = null;
+let stickyCard: HTMLElement | null = null;
 let clickSuppressor: ((event: MouseEvent) => void) | null = null;
 let clickSuppressorTimer: number | null = null;
 
@@ -41,7 +43,29 @@ function isTouchLike(event: PointerEvent): boolean {
   return event.pointerType === 'touch' || event.pointerType === 'pen';
 }
 
-function teardownGesture(reason: string): void {
+/*
+ * Closing a preview is deliberately NOT tied to the finger lifting.
+ *
+ * On a touch device there is no "pointer left the card" event that means what
+ * mouseleave means — the finger simply stops existing. Tearing down on
+ * pointerup made a preview last exactly as long as the swipe, which is not
+ * what a preview is for: the point is to look at it. autoScrub keeps looping
+ * on its own (canContinueAutoScrub only tests previewActive), so leaving the
+ * card engaged is all that is needed to get a preview that plays until
+ * something else takes over.
+ */
+function releaseSticky(reason: string): void {
+  if (!stickyCard) {
+    return;
+  }
+
+  const card = stickyCard;
+  stickyCard = null;
+  handlePointerLeave(card, { pointerType: 'mouse' });
+  debugLog('Touch preview closed.', reason);
+}
+
+function endGesture(reason: string, keepPreview: boolean): void {
   if (!gesture) {
     return;
   }
@@ -53,8 +77,18 @@ function teardownGesture(reason: string): void {
     return;
   }
 
+  if (keepPreview && config.touchStickyPreview) {
+    stickyCard = card;
+    debugLog('Touch preview left running.', reason);
+    return;
+  }
+
   const holdMs = Math.max(0, Number(config.touchReleaseHoldMs) || 0);
   const close = () => {
+    if (stickyCard === card) {
+      stickyCard = null;
+    }
+
     handlePointerLeave(card, { pointerType: 'mouse' });
   };
 
@@ -104,6 +138,9 @@ export function bindTouchScrubEvents(): void {
   }
 
   const onPointerDown = (event: PointerEvent) => {
+    touchDebugPointerType(event.pointerType);
+    touchDebugCount('pointerdown');
+
     if (!config.enabled || !config.touchPreviewEnabled || !isTouchLike(event)) {
       return;
     }
@@ -114,15 +151,28 @@ export function bindTouchScrubEvents(): void {
 
     // A second finger means a pinch or a two-finger scroll, neither of which is ours.
     if (gesture) {
-      teardownGesture('second-pointer');
+      endGesture('second-pointer', false);
       return;
     }
 
     const card = getHoverCardFromEventTarget(event.target);
+
+    /*
+     * Touching anywhere that is not the running preview closes it. This is the
+     * counterpart to leaving it running on release: without it the only way to
+     * dismiss one would be to start another, and a stale preview would sit on
+     * screen through scrolling and navigation.
+     */
+    if (stickyCard && stickyCard !== card) {
+      releaseSticky('touched-elsewhere');
+    }
+
     if (!card) {
+      touchDebugCount('cardHits', 'pointerdown hit no card');
       return;
     }
 
+    touchDebugCount('cardHits', 'card resolved on pointerdown');
     gesture = {
       pointerId: event.pointerId,
       card,
@@ -134,6 +184,8 @@ export function bindTouchScrubEvents(): void {
   };
 
   const onPointerMove = (event: PointerEvent) => {
+    touchDebugCount('pointermove');
+
     if (!gesture || event.pointerId !== gesture.pointerId || gesture.abandoned) {
       return;
     }
@@ -161,6 +213,7 @@ export function bindTouchScrubEvents(): void {
       }
 
       gesture.armed = true;
+      touchDebugCount('armed', `armed dx=${Math.round(dx)} dy=${Math.round(dy)}`);
       handlePointerEnter(gesture.card, {
         pointerType: 'mouse',
         clientX: event.clientX,
@@ -178,6 +231,8 @@ export function bindTouchScrubEvents(): void {
   };
 
   const onPointerUp = (event: PointerEvent) => {
+    touchDebugCount('pointerup');
+
     if (!gesture || event.pointerId !== gesture.pointerId) {
       return;
     }
@@ -186,15 +241,23 @@ export function bindTouchScrubEvents(): void {
       suppressNextClick();
     }
 
-    teardownGesture('pointerup');
+    endGesture('pointerup', true);
   };
 
+  /*
+   * pointercancel means the browser claimed the gesture (usually a scroll that
+   * beat touch-action to it), not that the user changed their mind. If the
+   * preview had already armed, keep it — losing it here is how a swipe on a
+   * horizontally scrolling row silently does nothing.
+   */
   const onPointerCancel = (event: PointerEvent) => {
+    touchDebugCount('pointercancel');
+
     if (!gesture || event.pointerId !== gesture.pointerId) {
       return;
     }
 
-    teardownGesture('pointercancel');
+    endGesture('pointercancel', true);
   };
 
   /*
@@ -207,7 +270,7 @@ export function bindTouchScrubEvents(): void {
     }
 
     if (getCardFromEventTarget(event.target) === gesture.card) {
-      teardownGesture('contextmenu');
+      endGesture('contextmenu', false);
     }
   };
 
@@ -229,6 +292,7 @@ export function bindTouchScrubEvents(): void {
 
 export function unbindTouchScrubEvents(): void {
   clearClickSuppressor();
+  releaseSticky('unbind');
   gesture = null;
 
   if (!runtimeState.touchScrubHandlers) {

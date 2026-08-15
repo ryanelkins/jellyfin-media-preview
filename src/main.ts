@@ -5,6 +5,7 @@ import { bindUserActivationEvents, unbindUserActivationEvents } from './interact
 import { bindRouteEvents, unbindRouteEvents } from './core/router';
 import { bindDelegatedHoverEvents, unbindDelegatedHoverEvents } from './interaction/delegatedEvents';
 import { bindTouchScrubEvents, unbindTouchScrubEvents } from './interaction/touch';
+import { installTouchDebugOverlay } from './interaction/touchDebugOverlay';
 import { bindCards } from './interaction/hover';
 import { cancelAdminNavigationRefresh, scheduleAdminNavigationRefresh } from './admin/navigation';
 import { cancelScheduledScan, observePageChanges, scheduleScan } from './core/observer';
@@ -51,6 +52,8 @@ export function start(): void {
    * unavailable. Previously it returned unconditionally, which is why no
    * amount of touch handling downstream could ever have run on a phone.
    */
+  installTouchDebugOverlay();
+
   const hasPreciseHover = !window.matchMedia
     || window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 

@@ -49,6 +49,7 @@ const standaloneFallbackConfig: PluginConfig = {
   hoverIntentThresholdPx: 18,
   hoverCooldownMs: 0,
   touchPreviewEnabled: true,
+  touchStickyPreview: true,
   touchDragThresholdPx: 10,
   touchReleaseHoldMs: 0,
   keyboardPreviewEnabled: false,
@@ -211,6 +212,7 @@ export function normalizeConfig(): void {
   config.hoverIntentThresholdPx = Math.max(0, numberOrFallback(config.hoverIntentThresholdPx, 18));
   config.hoverCooldownMs = Math.max(0, numberOrFallback(config.hoverCooldownMs, 0));
   config.touchPreviewEnabled = config.touchPreviewEnabled !== false;
+  config.touchStickyPreview = config.touchStickyPreview !== false;
   config.touchDragThresholdPx = clamp(numberOrFallback(config.touchDragThresholdPx, 10), 2, 200);
   config.touchReleaseHoldMs = Math.max(0, numberOrFallback(config.touchReleaseHoldMs, 0));
   config.keyboardPreviewEnabled = config.keyboardPreviewEnabled === true;

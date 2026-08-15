@@ -49,6 +49,7 @@ export interface PluginConfig {
   hoverIntentThresholdPx: number;
   hoverCooldownMs: number;
   touchPreviewEnabled: boolean;
+  touchStickyPreview: boolean;
   touchDragThresholdPx: number;
   touchReleaseHoldMs: number;
   keyboardPreviewEnabled: boolean;
