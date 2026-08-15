@@ -4,6 +4,7 @@ import { ensureInjectedStyles, destroyCardBindings } from './cards/lifecycle';
 import { bindUserActivationEvents, unbindUserActivationEvents } from './interaction/userActivation';
 import { bindRouteEvents, unbindRouteEvents } from './core/router';
 import { bindDelegatedHoverEvents, unbindDelegatedHoverEvents } from './interaction/delegatedEvents';
+import { bindTouchScrubEvents, unbindTouchScrubEvents } from './interaction/touch';
 import { bindCards } from './interaction/hover';
 import { cancelAdminNavigationRefresh, scheduleAdminNavigationRefresh } from './admin/navigation';
 import { cancelScheduledScan, observePageChanges, scheduleScan } from './core/observer';
@@ -28,6 +29,7 @@ export function destroy(): void {
   cancelScheduledScan();
   cancelAdminNavigationRefresh();
   unbindDelegatedHoverEvents();
+  unbindTouchScrubEvents();
   unbindRouteEvents();
   unbindUserActivationEvents();
   destroyCardBindings();
@@ -43,8 +45,17 @@ export function start(): void {
     return;
   }
 
-  if (window.matchMedia && !window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    log('Skipping media preview because the current device does not advertise precise hover.');
+  /*
+   * A device without precise hover can still preview by dragging (see
+   * interaction/touch.ts), so this only bails when the touch path is also
+   * unavailable. Previously it returned unconditionally, which is why no
+   * amount of touch handling downstream could ever have run on a phone.
+   */
+  const hasPreciseHover = !window.matchMedia
+    || window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  if (!hasPreciseHover && !config.touchPreviewEnabled) {
+    log('Skipping media preview because the device has no precise hover and touch preview is disabled.');
     return;
   }
 
@@ -52,6 +63,7 @@ export function start(): void {
   bindUserActivationEvents();
   bindRouteEvents();
   bindDelegatedHoverEvents();
+  bindTouchScrubEvents();
   bindCards(document);
   scheduleAdminNavigationRefresh();
   observePageChanges();

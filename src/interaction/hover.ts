@@ -43,6 +43,26 @@ import { clamp } from '../core/dom';
 import { getAdaptiveTrickplayFrameHoldMs, getTrickplayFrameIndex, clampAdaptiveDelay } from '../preview/trickplay';
 import { clearAutoScrub, startAutoScrub } from './autoScrub';
 
+/*
+ * Synthetic pointer input. The mouse path already fabricated these objects to
+ * reuse the pointer handlers (see handleMouseEnter); the touch gesture layer
+ * does the same. `activationDelayMs` lets a caller that has ALREADY proven
+ * intent skip the hover delay — a deliberate horizontal drag is the intent
+ * signal, so making the finger wait another 300ms after it is recognised only
+ * reads as lag.
+ */
+export type HoverPointerInput = PointerEvent | {
+  pointerType?: string;
+  clientX: number;
+  clientY?: number;
+  activationDelayMs?: number;
+};
+
+function getActivationDelayOverride(event: HoverPointerInput): number | null {
+  const override = (event as { activationDelayMs?: number }).activationDelayMs;
+  return typeof override === 'number' && Number.isFinite(override) ? Math.max(0, override) : null;
+}
+
 export function getRelativePercent(card: HTMLElement, event: MouseEvent | PointerEvent | { clientX: number }): number {
   const rect = card.getBoundingClientRect();
   if (!rect.width) {
@@ -184,7 +204,7 @@ function clearHoverActivationTimer(state: ReturnType<typeof getOrCreateCardState
 
 function getInitialHoverPercent(
   card: HTMLElement,
-  event: PointerEvent | { pointerType?: string; clientX: number; clientY?: number }
+  event: HoverPointerInput
 ): number {
   return config.hoverMode === HOVER_MODE_AUTO
     ? clamp((Number(config.autoScrubStartPercent) || 0) / 100, 0, 1)
@@ -218,9 +238,9 @@ function shouldShowTrickplayLoadingIndicator(itemType?: string | null): boolean 
 function scheduleHoverActivation(
   card: HTMLElement,
   state: ReturnType<typeof getOrCreateCardState>,
-  event: PointerEvent | { pointerType?: string; clientX: number; clientY?: number }
+  event: HoverPointerInput
 ): void {
-  const effectiveDelayMs = getEffectiveHoverDelayMs(state);
+  const effectiveDelayMs = getActivationDelayOverride(event) ?? getEffectiveHoverDelayMs(state);
   state.hoverIntentAnchorX = event.clientX;
   state.hoverIntentAnchorY = event.clientY ?? null;
   clearHoverActivationTimer(state);
@@ -455,7 +475,7 @@ export function schedulePreviewUpdate(card: HTMLElement, percent: number): void 
   }, Math.max(0, minHoldMs - elapsedSinceLastRender));
 }
 
-export function handlePointerEnter(card: HTMLElement, event: PointerEvent | { pointerType?: string; clientX: number; clientY?: number }): void {
+export function handlePointerEnter(card: HTMLElement, event: HoverPointerInput): void {
   if (!config.enabled || event.pointerType !== 'mouse' || runtimeState.expandedTrailerSession) {
     return;
   }
@@ -479,7 +499,7 @@ export function handlePointerEnter(card: HTMLElement, event: PointerEvent | { po
   scheduleHoverActivation(card, state, event);
 }
 
-export function handlePointerMove(card: HTMLElement, event: PointerEvent | { pointerType?: string; clientX: number; clientY?: number }): void {
+export function handlePointerMove(card: HTMLElement, event: HoverPointerInput): void {
   if (runtimeState.expandedTrailerSession || (event.pointerType && event.pointerType !== 'mouse')) {
     return;
   }

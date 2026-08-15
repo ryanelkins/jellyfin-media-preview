@@ -18,6 +18,14 @@ export const runtimeState = {
     onFocusOut: (event: FocusEvent) => void;
     onKeyDown: (event: KeyboardEvent) => void;
   } | null,
+  touchScrubEventsBound: false,
+  touchScrubHandlers: null as {
+    onPointerDown: (event: PointerEvent) => void;
+    onPointerMove: (event: PointerEvent) => void;
+    onPointerUp: (event: PointerEvent) => void;
+    onPointerCancel: (event: PointerEvent) => void;
+    onContextMenu: (event: MouseEvent) => void;
+  } | null,
   userActivationEventsBound: false,
   userActivationHandler: null as (() => void) | null,
   scanScheduled: false,

@@ -101,3 +101,16 @@
     transform: rotate(360deg);
   }
 }
+
+/*
+ * Touch scrubbing. `pan-y` leaves vertical scrolling to the browser while
+ * handing horizontal gestures to the pointer handlers, which is what lets a
+ * sideways drag scrub without fighting the scroller. Scoped to bound cards so
+ * nothing else on the page changes its gesture behaviour, and confined to
+ * coarse pointers so a hybrid laptop's trackpad is untouched.
+ */
+@media (pointer: coarse) {
+  [data-media-preview-bound='true'] {
+    touch-action: pan-y;
+  }
+}
